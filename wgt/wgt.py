@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from pymodbus.client.sync import ModbusTcpClient
 
-from .wgt_status import (
+from . import (
     Aussenklappe,
     Betriebsart,
     Bypass,
@@ -641,6 +641,9 @@ class WGT:
                 continue
 
             value = getattr(self, attr)
+            if callable(value):
+                continue
+
             self.logger.info("%s:\n\t%s", attr, value)
 
 
