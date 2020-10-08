@@ -69,9 +69,11 @@ class WGT:
 
         self.logger.info("Created Modbus TCP client for %s", self.ip_str)
 
+        self.client = ModbusTcpClient(self.ip_str)
+
     def __enter__(self):
         """Kontext Eintritt. Create a client. Return self."""
-        self.client = ModbusTcpClient(self.ip_str)
+        self.client.connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -492,7 +494,6 @@ class WGT:
     @property
     def temperatur_raum1_ist(self) -> Celsius:
         """Ist temperatur raum 1."""
-        # TODO: Mache raum parametrierbar
         return self._read_temperature(360)
 
     @property
