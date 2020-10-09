@@ -14,8 +14,8 @@ pytest = "*"
 coverage = "*"
 
 [packages]
+aiohttp = "*"
 pymodbus = "*"
-wgt = {path = ".", editable = true}
 
 [requires]
 python_version = "3.9"
