@@ -54,22 +54,24 @@ class WGT:
             Version des Bedienteils.
 
         """
+        # Save given parameters
+        self.ip_str = ip_str
+        self.version = Decimal(version)
+        # Default parameters
+        self.port = 502
 
+        # Setup logger
         self.logger = logging.getLogger(__name__)
 
-        self.version = Decimal(version)
-
+        # Ensure that we have a version that supports modbus
         if self.version <= 1.05:
             self.logger.error("This version doesn't support modbus.")
             raise EnvironmentError
-
         self.logger.info("Detected version %01.2f", self.version)
 
-        self.ip_str = ip_str
-
+        # Create modbus client
         self.logger.info("Created Modbus TCP client for %s", self.ip_str)
-
-        self.client = ModbusTcpClient(self.ip_str)
+        self.client = ModbusTcpClient(self.ip_str, port=self.port)
 
     def __enter__(self):
         """Kontext Eintritt. Create a client. Return self."""
