@@ -73,12 +73,12 @@ class WGT:
         self.logger.info("Created Modbus TCP client for %s", self.ip)
         self.client = ModbusClient(host=self.ip, port=self.port)
 
-    def __enter__(self):
+    def __enter__(self) -> "WGT":
         """Kontext Eintritt. Create a client. Return self."""
         self.client.connect()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Kontext Exit. Schliesse client."""
         self.logger.info("Closing modbus tcp client.")
         self.client.close()
@@ -107,10 +107,14 @@ class WGT:
 
         # Extract value
         try:
-            value = response.registers[0]
+            value = int(response.registers[0])
         except AttributeError as err:
             self.logger.debug(err)
             self.logger.warning("Couldn't get register from %i.", addr)
+            raise
+        except ValueError as err:
+            self.logger.debug(err)
+            self.logger.warning("Couldn't translate register response to int.")
             raise
 
         return value
@@ -145,7 +149,7 @@ class WGT:
         # Write and check response
         self.logger.debug("Writing %i to %i.", value, addr)
         response = self.client.write_registers(addr, value)
-        return response.isError()
+        return bool(response.isError())
 
     def _read_temperature(self, addr: int) -> Celsius:
         """Read temperature."""
@@ -165,9 +169,6 @@ class WGT:
     @betriebsart.setter
     def betriebsart(self, value: Betriebsart) -> bool:
         """Setze Betriebsart."""
-        if not isinstance(value, Betriebsart):
-            self.logger.warning("Wrong type for Betriebsart.")
-            return False
         return self._write_register(100, value)
 
     @property
@@ -178,9 +179,6 @@ class WGT:
     @luftstufe_manuell.setter
     def luftstufe_manuell(self, value: Luftstufe) -> bool:
         """Setze die Lüftungsstufe manuell."""
-        if not isinstance(value, Luftstufe):
-            self.logger.warning("Wrong type for Luftstufe.")
-            return False
         return self._write_register(101, value)
 
     @property
@@ -519,7 +517,7 @@ class WGT:
         return Freigabe(self._read_register(440))
 
     @zusatzheizung_raum1_freigabe.setter
-    def zusatzheizung_raum1_freigabe(self, value) -> bool:
+    def zusatzheizung_raum1_freigabe(self, value: Freigabe) -> bool:
         """Sperre/Freigabe der Zusatzheizung in raum 1."""
         if not isinstance(value, Freigabe):
             raise TypeError
@@ -605,12 +603,12 @@ class WGT:
         return timedelta(hours=self._read_register(810))
 
     @property
-    def betriebsstunden_erdwaermetauscher(self):
+    def betriebsstunden_erdwaermetauscher(self) -> timedelta:
         """Betriebsstunden des Erdärmetauschers."""
         return timedelta(hours=self._read_register(813))
 
     @property
-    def keine_meldungen(self) -> bool:
+    def meldungen_gesamt(self) -> Meldung:
         """Check if any meldung exists. True means all clear."""
         for attr in (
             self.druckwaechter,
@@ -627,8 +625,8 @@ class WGT:
             self.zuluft_zu_kalt,
         ):
             if attr == Meldung.Meldung:
-                return False
-        return True
+                return Meldung.Meldung
+        return Meldung.Inaktiv
 
     @classmethod
     def get_all_attributes(cls) -> Generator[str, None, None]:
@@ -654,7 +652,7 @@ class WGT:
             self.logger.info("%s:\n\t%s", attr, value)
 
 
-def read_all():
+def read_all() -> None:
     """Create a WGT instance and readout all properties."""
 
     with WGT("10.1.1.29", version="1.06") as wgt:

@@ -15,11 +15,11 @@ class Unit(ABC):
     unit: str
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the stringified value."""
         return str(self.value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Nice representation."""
         return f"{self.value}{self.unit}"
 
