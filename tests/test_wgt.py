@@ -6,14 +6,14 @@ from decimal import Decimal
 
 import pytest
 
-from wgt import wgt
+from wgt import lueftungsanlage
 
 
 @pytest.fixture
 def wgt_instance():
     ip = "127.0.0.1"
     version = "1.06"
-    return wgt.WGT(ip=ip, version=version)
+    return lueftungsanlage.WGT(ip=ip, version=version)
 
 
 def test_init(wgt_instance):
