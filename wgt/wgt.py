@@ -4,7 +4,7 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Union
+from typing import Generator, Optional, Union
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
@@ -630,22 +630,33 @@ class WGT:
                 return False
         return True
 
+    @classmethod
+    def get_all_attributes(cls) -> Generator[str, None, None]:
+        """Return all attributes of the WGT."""
+
+        excludes = (
+            "get_all_attributes",
+            "read_all",
+        )
+        for attr in dir(cls):
+            if attr.startswith("_") or (attr in excludes):
+                continue
+            yield attr
+
     def read_all(self) -> None:
         """Read and logger.info all properties."""
+
         self.logger.info("Reading all information from WGT")
-        for attr in dir(self):
-            if callable(attr) or attr.startswith("_") or (attr == "client"):
-                continue
+        for attr in self.get_all_attributes():
 
             value = getattr(self, attr)
-            if callable(value):
-                continue
 
             self.logger.info("%s:\n\t%s", attr, value)
 
 
 def read_all():
     """Create a WGT instance and readout all properties."""
+
     with WGT("10.1.1.29", version="1.06") as wgt:
         wgt.read_all()
 
