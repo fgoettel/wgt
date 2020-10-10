@@ -2,11 +2,12 @@
 import logging
 from datetime import timedelta
 from enum import Enum
+from typing import List
 
 from aiohttp import web
+from aiohttp.web import json_response
 
-from wgt import __version__
-from wgt.lueftungsanlage import WGT
+from wgt import WGT, __version__
 from wgt.types import Unit
 
 routes = web.RouteTableDef()
@@ -17,14 +18,15 @@ routes = web.RouteTableDef()
 # . generate POST/PUT for all that allow setattr
 # Profit
 ENDPOINTS = list(WGT.get_all_attributes())
+ENDPOINTS_PUT: List[str] = []
 
 
 @routes.get("/")
-async def version(request):
+async def version(request) -> json_response:
     """Return version of the WGT module."""
     print(request)
     data = {"version": __version__, "wgt_url": "/wgt/"}
-    return web.json_response(data)
+    return json_response(data)
 
 
 @routes.get("/status/{attribute}")
@@ -36,9 +38,8 @@ async def stosslueftung(request):
     # Check if the attribute is a valid endpoint
     data = {"error": 0}
     if attribute not in ENDPOINTS:
-        logging.info("Trying to access %s", attribute)
-        data["error"] = "invalid endpoint"
-        return web.json_response(data)
+        logging.info("Failed to get %s", attribute)
+        raise web.HTTPNotFound
 
     # Connect to wgt and read attribute
     with WGT("10.1.1.29", version="1.06") as wgt:
@@ -56,7 +57,9 @@ async def stosslueftung(request):
     elif status is None:
         data["error"] = f"Endpoint '{attribute}' is not available in your WGT version.'"
     else:
-        data["error"] = f"Couldn't parse '{attribute}'' with '{status}'"
+        logging.error("Couldn't parse status of %s", attribute)
+        raise web.HTTPInternalServerError
+
     return web.json_response(data)
 
 
