@@ -8,7 +8,7 @@ from typing import Generator, Optional, Union
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
-from wgt.wgt_types import (
+from wgt.types import (
     Aussenklappe,
     Betriebsart,
     Bypass,
@@ -184,7 +184,7 @@ class WGT:
         return self._write_register(101, value)
 
     @property
-    def lufstufe_aktuell(self) -> Luftstufe:
+    def luftstufe_aktuell(self) -> Luftstufe:
         """Aktuelle Lüftungsstufe."""
         return Luftstufe(self._read_register(102))
 
@@ -234,27 +234,27 @@ class WGT:
         return timedelta(minutes=self._read_register(112))
 
     @property
-    def status_waermepumpe(self) -> Waermepumpe:
+    def waermepumpe(self) -> Waermepumpe:
         """Status der Wärmepumpe."""
         return Waermepumpe(self._read_register(114))
 
     @property
-    def status_nachheizregister(self) -> Status:
+    def nachheizregister(self) -> Status:
         """Status des Nachheizregisters."""
         return Status(self._read_register(116))
 
     @property
-    def status_geblaese_zuluft(self) -> Geblaese:
+    def geblaese_zuluft(self) -> Geblaese:
         """Status des Zuluft Gebläses."""
         return Geblaese(self._read_register(117))
 
     @property
-    def status_geblaese_abluft(self) -> Geblaese:
+    def geblaese_abluft(self) -> Geblaese:
         """Staus des Abluft Gebläses."""
         return Geblaese(self._read_register(118))
 
     @property
-    def status_erdwaermetauscher(self) -> Erdwaermetauscher:
+    def erdwaermetauscher(self) -> Erdwaermetauscher:
         """Status des Erdwärmetauschers.
 
         Defaults to 0 if no EWT.
@@ -262,17 +262,17 @@ class WGT:
         return Erdwaermetauscher(self._read_register(121))
 
     @property
-    def status_bypass(self) -> Bypass:
+    def bypass(self) -> Bypass:
         """Status des bypasses."""
         return Bypass(self._read_register(123))
 
     @property
-    def status_aussenklappe(self) -> Aussenklappe:
+    def aussenklappe(self) -> Aussenklappe:
         """Status der Aussenklappe."""
         return Aussenklappe(self._read_register(131))
 
     @property
-    def status_vorheizregister(self) -> Vorheizregister:
+    def vorheizregister(self) -> Vorheizregister:
         """Status des Vorheizregisters."""
         return Vorheizregister(self._read_register(133))
 

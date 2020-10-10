@@ -1,43 +1,51 @@
 """Define types for the different stati of the WGT."""
 
+from abc import ABC
 from dataclasses import dataclass
 from enum import Enum, unique
 
 
 @dataclass
-class Prozent:
+class Unit(ABC):
+    """Abstract class to derive units."""
+
+    # pylint: disable=too-few-public-methods
+
+    value: float
+    unit: str
+
+    @property
+    def name(self):
+        """Return the stringified value."""
+        return str(self.value)
+
+    def __str__(self):
+        """Nice representation."""
+        return f"{self.value}{self.unit}"
+
+
+@dataclass
+class Prozent(Unit):
     """Prozent."""
 
     value: float
-    unit_str: str = "%"
-
-    def __str__(self):
-        """Nice representation."""
-        return f"{self.value}{self.unit_str}"
+    unit: str = "%"
 
 
 @dataclass
-class Celsius:
+class Celsius(Unit):
     """Degree Celsius."""
 
     value: float
-    unit_str: str = "°C"
-
-    def __str__(self):
-        """Nice representation."""
-        return f"{self.value}{self.unit_str}"
+    unit: str = "°C"
 
 
 @dataclass
-class Drehzahl:
+class Drehzahl(Unit):
     """Drehzahl."""
 
     value: float
-    unit_str: str = "rpm"
-
-    def __str__(self):
-        """Nice repesentation."""
-        return f"{self.value}{self.unit_str}"
+    unit: str = "rpm"
 
 
 @unique
