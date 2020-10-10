@@ -11,9 +11,9 @@ from wgt import wgt
 
 @pytest.fixture
 def wgt_instance():
-    ip_str = "127.0.0.1"
+    ip = "127.0.0.1"
     version = "1.06"
-    return wgt.WGT(ip_str=ip_str, version=version)
+    return wgt.WGT(ip=ip, version=version)
 
 
 def test_init(wgt_instance):
@@ -21,7 +21,7 @@ def test_init(wgt_instance):
     # Shouldn't be connected yet
     assert not wgt_instance.client.is_socket_open()
     # Provided in fixture
-    assert wgt_instance.ip_str == "127.0.0.1"
+    assert wgt_instance.ip == "127.0.0.1"
     assert float(wgt_instance.version) == 1.06
     assert wgt_instance.version == Decimal("1.06")
     # Default

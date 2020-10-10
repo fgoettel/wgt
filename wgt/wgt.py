@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
-from . import (
+from wgt.wgt_types import (
     Aussenklappe,
     Betriebsart,
     Bypass,
@@ -42,12 +42,12 @@ class WGT:
 
     # pylint: disable=R0904
 
-    def __init__(self, ip_str: str, version: str):
+    def __init__(self, ip: str, version: str):
         """Initialisiere die WGT.
 
         Parameters
         ----------
-        ip_str
+        ip
             IP der WGT
 
         version
@@ -55,7 +55,7 @@ class WGT:
 
         """
         # Save given parameters
-        self.ip_str = ip_str
+        self.ip = ip
         self.version = Decimal(version)
         # Default parameters
         self.port = 502
@@ -70,8 +70,8 @@ class WGT:
         self.logger.info("Detected version %01.2f", self.version)
 
         # Create modbus client
-        self.logger.info("Created Modbus TCP client for %s", self.ip_str)
-        self.client = ModbusClient(host=self.ip_str, port=self.port)
+        self.logger.info("Created Modbus TCP client for %s", self.ip)
+        self.client = ModbusClient(host=self.ip, port=self.port)
 
     def __enter__(self):
         """Kontext Eintritt. Create a client. Return self."""
@@ -640,7 +640,7 @@ class WGT:
         """Read and logger.info all properties."""
         self.logger.info("Reading all information from WGT")
         for attr in dir(self):
-            if callable(attr):
+            if callable(attr) or attr.startswith("_") or (attr == "client"):
                 continue
 
             value = getattr(self, attr)
