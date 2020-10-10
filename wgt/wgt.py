@@ -140,7 +140,7 @@ class WGT:
         elif isinstance(value_raw, Celsius):
             value = int(value_raw.value * 10)
         else:
-            raise Exception("No good input type.")
+            raise TypeError("Invalid input type.")
 
         # Write and check response
         self.logger.debug("Writing %i to %i.", value, addr)
@@ -154,8 +154,7 @@ class WGT:
     def _write_temperature(self, addr: int, value: Celsius) -> bool:
         """Write temperature."""
         if not isinstance(value, Celsius):
-            self.logger.warning("Wrong type. Not setting temperature.")
-            return False
+            raise TypeError
         return self._write_register(addr, value)
 
     @property
@@ -198,12 +197,10 @@ class WGT:
     def luftleistung_linear_manuell(self, value: Prozent) -> bool:
         """Setze die Luftleistung auf einen Prozentwert."""
         if not isinstance(value, Prozent):
-            self.logger.warning("Wrong type for Luftleistung")
-            return False
+            raise TypeError
 
         if not 30 <= value.value <= 100:
-            self.logger.warning("Out of range.")
-            return False
+            raise ValueError("Luftleistung out of range.")
 
         return self._write_register(103, value)
 
@@ -225,9 +222,9 @@ class WGT:
     @stosslueftung.setter
     def stosslueftung(self, value: Status) -> bool:
         """De-/aktiviere die Stosslueftung."""
+
         if not isinstance(value, Status):
-            self.logger.warning("Wrong type for Stosslueftung.")
-            return False
+            raise TypeError
 
         return self._write_register(111, value)
 
@@ -375,8 +372,7 @@ class WGT:
     def heizen_kuehlen(self, value: HeizKuehl) -> bool:
         """Setze Heiz/Kühl Modus."""
         if not isinstance(value, HeizKuehl):
-            self.logger.warning("Wrong type.")
-            return False
+            raise TypeError
         return self._write_register(230, value)
 
     @property
@@ -388,8 +384,8 @@ class WGT:
     def waermepumpe_heizen(self, value: Freigabe) -> bool:
         """Setze Freigabe der Heiz Wärmepumpe."""
         if not isinstance(value, Freigabe):
-            self.logger.warning("Wrong type.")
-            return False
+            raise TypeError
+
         return self._write_register(231, value)
 
     @property
@@ -401,8 +397,8 @@ class WGT:
     def waermepumpe_kuehlen(self, value: Freigabe) -> bool:
         """Setze Freigabe der Kühl Wärmepumpe."""
         if not isinstance(value, Freigabe):
-            self.logger.warning("Wrong type.")
-            return False
+            raise TypeError
+
         return self._write_register(232, value)
 
     @property
@@ -414,8 +410,7 @@ class WGT:
     def zusatzheizung_haus(self, value: Freigabe) -> bool:
         """Setze Freigabe der Zusatzheizung fürs Haus."""
         if not isinstance(value, Freigabe):
-            self.logger.warning("Wrong type.")
-            return False
+            raise TypeError
         return self._write_register(234, value)
 
     @property
@@ -527,8 +522,8 @@ class WGT:
     def zusatzheizung_raum1_freigabe(self, value) -> bool:
         """Sperre/Freigabe der Zusatzheizung in raum 1."""
         if not isinstance(value, Freigabe):
-            self.logger.warning("Wrong type")
-            return False
+            raise TypeError
+
         return self._write_register(440, value)
 
     @property
@@ -540,8 +535,8 @@ class WGT:
     def zusatzheizung_raum1_aktiv(self, value: Status) -> bool:
         """De-Aktiviere ZH in raum 1."""
         if not isinstance(value, Status):
-            self.logger.warning("Wrong type")
-            return False
+            raise TypeError
+
         return self._write_register(460, value)
 
     @property
@@ -553,8 +548,7 @@ class WGT:
     def zeitprogramm_heizen_raum1(self, value: Freigabe) -> bool:
         """De-Aktiviere Zeitprogramm für Raum 1."""
         if not isinstance(value, Freigabe):
-            self.logger.warning("Wrong type")
-            return False
+            raise TypeError
         return self._write_register(500, value)
 
     @property

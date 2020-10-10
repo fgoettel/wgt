@@ -6,7 +6,7 @@ from enum import Enum, unique
 
 @dataclass
 class Prozent:
-    """Prozent class."""
+    """Prozent."""
 
     value: float
     unit_str: str = "%"
@@ -18,7 +18,7 @@ class Prozent:
 
 @dataclass
 class Celsius:
-    """Celsius class."""
+    """Degree Celsius."""
 
     value: float
     unit_str: str = "°C"
@@ -30,7 +30,7 @@ class Celsius:
 
 @dataclass
 class Drehzahl:
-    """Drehzahl class."""
+    """Drehzahl."""
 
     value: float
     unit_str: str = "rpm"
@@ -53,7 +53,7 @@ class Betriebsart(Enum):
 
 @unique
 class Luftstufe(Enum):
-    """Aktuelle Lüftungsstufe."""
+    """Lüftungsstufe."""
 
     Aus = 0
     Stufe_1 = 1
@@ -66,7 +66,7 @@ class Luftstufe(Enum):
 
 @unique
 class Waermepumpe(Enum):
-    """Betriebsmodus der Wärmepumpe."""
+    """Betriebsart der Wärmepumpe."""
 
     Aus = 0
     Heizen = 5
@@ -75,7 +75,7 @@ class Waermepumpe(Enum):
 
 @unique
 class Fehler(Enum):
-    """Fehler der WGT."""
+    """Fehlerstatus der WGT."""
 
     Kein = 0
     DrehzahlZuluftFehlt = 257
@@ -110,7 +110,7 @@ class Fehler(Enum):
 
 @unique
 class Geblaese(Enum):
-    """Gebläse Status."""
+    """Betriebsart Gebläse."""
 
     Deaktiviert = 0
     Anlaufphase = 1
@@ -121,7 +121,10 @@ class Geblaese(Enum):
 
 @unique
 class Erdwaermetauscher(Enum):
-    """Erdwärmetauscher Status."""
+    """Betriebsart Erdwärmetauscher.
+
+    Default: Aus / 0 wenn kein EWT verbaut ist.
+    """
 
     Aus = 0
     Heizbetrieb = 1
@@ -130,7 +133,7 @@ class Erdwaermetauscher(Enum):
 
 @unique
 class Bypass(Enum):
-    """Bypass Status."""
+    """Betriebsart Bypass."""
 
     Geschlossen = 0
     OffenKuehlen = 1
@@ -139,7 +142,7 @@ class Bypass(Enum):
 
 @unique
 class Aussenklappe(Enum):
-    """Aussenklappe Status."""
+    """Betriebsart Aussenklappe."""
 
     Geschlossen = 0
     Offen = 1
@@ -147,7 +150,7 @@ class Aussenklappe(Enum):
 
 @unique
 class Vorheizregister(Enum):
-    """Vorheizregister Status."""
+    """Betriebsart Vorheizregister."""
 
     Aus = 0
     Vhr1_aktiv = 1
