@@ -6,7 +6,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional, Union
 
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
 from . import (
     Aussenklappe,
@@ -71,7 +71,7 @@ class WGT:
 
         # Create modbus client
         self.logger.info("Created Modbus TCP client for %s", self.ip_str)
-        self.client = ModbusTcpClient(self.ip_str, port=self.port)
+        self.client = ModbusClient(host=self.ip_str, port=self.port)
 
     def __enter__(self):
         """Kontext Eintritt. Create a client. Return self."""
