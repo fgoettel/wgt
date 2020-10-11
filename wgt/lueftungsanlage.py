@@ -149,7 +149,7 @@ class WGT:
         # Write and check response
         self.logger.debug("Writing %i to %i.", value, addr)
         response = self.client.write_registers(addr, value)
-        return bool(response.isError())
+        return not bool(response.isError())
 
     def _read_temperature(self, addr: int) -> Celsius:
         """Read temperature."""
