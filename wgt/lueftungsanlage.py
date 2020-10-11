@@ -4,6 +4,7 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 from enum import Enum
+from types import TracebackType
 from typing import Generator, Optional, Union
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
@@ -78,7 +79,12 @@ class WGT:
         self.client.connect()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[BaseException],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Kontext Exit. Schliesse client."""
         self.logger.info("Closing modbus tcp client.")
         self.client.close()
@@ -121,7 +127,7 @@ class WGT:
 
     def _write_register(
         self, addr: int, value_raw: Union[Enum, Prozent, Celsius]
-    ) -> bool:
+    ) -> None:
         """Write value to a register.
 
         Parameters
@@ -131,10 +137,10 @@ class WGT:
         value_raw
             The value to write. Either Enum, Prozent or Celsius
 
-        Returns
+        Exceptions
         -------
-        bool
-            True if the write was succesful
+
+            Raises an exception if the write was not succesfull
 
         """
 
@@ -146,20 +152,23 @@ class WGT:
         else:
             raise TypeError("Invalid input type.")
 
-        # Write and check response
+        # Write
         self.logger.debug("Writing %i to %i.", value, addr)
         response = self.client.write_registers(addr, value)
-        return not bool(response.isError())
+
+        # Raise an excpetion if write was not succesful
+        if response.isError():
+            raise RuntimeError("Could not write to WGT")
 
     def _read_temperature(self, addr: int) -> Celsius:
         """Read temperature."""
         return Celsius(self._read_register(addr) / 10.0)
 
-    def _write_temperature(self, addr: int, value: Celsius) -> bool:
+    def _write_temperature(self, addr: int, value: Celsius) -> None:
         """Write temperature."""
         if not isinstance(value, Celsius):
             raise TypeError
-        return self._write_register(addr, value)
+        self._write_register(addr, value)
 
     @property
     def betriebsart(self) -> Betriebsart:
@@ -167,9 +176,9 @@ class WGT:
         return Betriebsart(self._read_register(100))
 
     @betriebsart.setter
-    def betriebsart(self, value: Betriebsart) -> bool:
+    def betriebsart(self, value: Betriebsart) -> None:
         """Setze Betriebsart."""
-        return self._write_register(100, value)
+        self._write_register(100, value)
 
     @property
     def luftstufe_manuell(self) -> Luftstufe:
@@ -177,9 +186,9 @@ class WGT:
         return Luftstufe(self._read_register(101))
 
     @luftstufe_manuell.setter
-    def luftstufe_manuell(self, value: Luftstufe) -> bool:
+    def luftstufe_manuell(self, value: Luftstufe) -> None:
         """Setze die Lüftungsstufe manuell."""
-        return self._write_register(101, value)
+        self._write_register(101, value)
 
     @property
     def luftstufe_aktuell(self) -> Luftstufe:
@@ -192,7 +201,7 @@ class WGT:
         return Prozent(self._read_register(103))
 
     @luftleistung_linear_manuell.setter
-    def luftleistung_linear_manuell(self, value: Prozent) -> bool:
+    def luftleistung_linear_manuell(self, value: Prozent) -> None:
         """Setze die Luftleistung auf einen Prozentwert."""
         if not isinstance(value, Prozent):
             raise TypeError
@@ -200,7 +209,7 @@ class WGT:
         if not 30 <= value.value <= 100:
             raise ValueError("Luftleistung out of range.")
 
-        return self._write_register(103, value)
+        self._write_register(103, value)
 
     @property
     def luftstufe_ueberschreibung(self) -> Status:
@@ -218,13 +227,11 @@ class WGT:
         return Status(self._read_register(111))
 
     @stosslueftung.setter
-    def stosslueftung(self, value: Status) -> bool:
+    def stosslueftung(self, value: Status) -> None:
         """De-/aktiviere die Stosslueftung."""
-
         if not isinstance(value, Status):
             raise TypeError
-
-        return self._write_register(111, value)
+        self._write_register(111, value)
 
     @property
     def stosslueftung_restlaufzeit(self) -> timedelta:
@@ -367,11 +374,11 @@ class WGT:
         return HeizKuehl(self._read_register(230))
 
     @heizen_kuehlen.setter
-    def heizen_kuehlen(self, value: HeizKuehl) -> bool:
+    def heizen_kuehlen(self, value: HeizKuehl) -> None:
         """Setze Heiz/Kühl Modus."""
         if not isinstance(value, HeizKuehl):
             raise TypeError
-        return self._write_register(230, value)
+        self._write_register(230, value)
 
     @property
     def waermepumpe_heizen(self) -> Freigabe:
@@ -379,12 +386,11 @@ class WGT:
         return Freigabe(self._read_register(231))
 
     @waermepumpe_heizen.setter
-    def waermepumpe_heizen(self, value: Freigabe) -> bool:
+    def waermepumpe_heizen(self, value: Freigabe) -> None:
         """Setze Freigabe der Heiz Wärmepumpe."""
         if not isinstance(value, Freigabe):
             raise TypeError
-
-        return self._write_register(231, value)
+        self._write_register(231, value)
 
     @property
     def waermepumpe_kuehlen(self) -> Freigabe:
@@ -392,12 +398,11 @@ class WGT:
         return Freigabe(self._read_register(232))
 
     @waermepumpe_kuehlen.setter
-    def waermepumpe_kuehlen(self, value: Freigabe) -> bool:
+    def waermepumpe_kuehlen(self, value: Freigabe) -> None:
         """Setze Freigabe der Kühl Wärmepumpe."""
         if not isinstance(value, Freigabe):
             raise TypeError
-
-        return self._write_register(232, value)
+        self._write_register(232, value)
 
     @property
     def zusatzheizung_haus(self) -> Freigabe:
@@ -405,11 +410,11 @@ class WGT:
         return Freigabe(self._read_register(234))
 
     @zusatzheizung_haus.setter
-    def zusatzheizung_haus(self, value: Freigabe) -> bool:
+    def zusatzheizung_haus(self, value: Freigabe) -> None:
         """Setze Freigabe der Zusatzheizung fürs Haus."""
         if not isinstance(value, Freigabe):
             raise TypeError
-        return self._write_register(234, value)
+        self._write_register(234, value)
 
     @property
     def fehler(self) -> Fehler:
@@ -497,9 +502,9 @@ class WGT:
         return self._read_temperature(400)
 
     @temperatur_raum1_soll.setter
-    def temperatur_raum1_soll(self, value: Celsius) -> Optional[bool]:
+    def temperatur_raum1_soll(self, value: Celsius) -> None:
         """Setze soll temperatur für raum 1."""
-        return self._write_temperature(400, value)
+        self._write_temperature(400, value)
 
     @property
     def temperatur_raum1_basis(self) -> Celsius:
@@ -507,9 +512,9 @@ class WGT:
         return self._read_temperature(420)
 
     @temperatur_raum1_basis.setter
-    def temperatur_raum1_basis(self, value: Celsius) -> Optional[bool]:
+    def temperatur_raum1_basis(self, value: Celsius) -> None:
         """Setze Basis Temperatur für Raum 1."""
-        return self._write_temperature(420, value)
+        self._write_temperature(420, value)
 
     @property
     def zusatzheizung_raum1_freigabe(self) -> Freigabe:
@@ -517,12 +522,11 @@ class WGT:
         return Freigabe(self._read_register(440))
 
     @zusatzheizung_raum1_freigabe.setter
-    def zusatzheizung_raum1_freigabe(self, value: Freigabe) -> bool:
+    def zusatzheizung_raum1_freigabe(self, value: Freigabe) -> None:
         """Sperre/Freigabe der Zusatzheizung in raum 1."""
         if not isinstance(value, Freigabe):
             raise TypeError
-
-        return self._write_register(440, value)
+        self._write_register(440, value)
 
     @property
     def zusatzheizung_raum1_aktiv(self) -> Status:
@@ -530,12 +534,11 @@ class WGT:
         return Status(self._read_register(460))
 
     @zusatzheizung_raum1_aktiv.setter
-    def zusatzheizung_raum1_aktiv(self, value: Status) -> bool:
+    def zusatzheizung_raum1_aktiv(self, value: Status) -> None:
         """De-Aktiviere ZH in raum 1."""
         if not isinstance(value, Status):
             raise TypeError
-
-        return self._write_register(460, value)
+        self._write_register(460, value)
 
     @property
     def zeitprogramm_heizen_raum1(self) -> Freigabe:
@@ -543,11 +546,11 @@ class WGT:
         return Freigabe(self._read_register(500))
 
     @zeitprogramm_heizen_raum1.setter
-    def zeitprogramm_heizen_raum1(self, value: Freigabe) -> bool:
+    def zeitprogramm_heizen_raum1(self, value: Freigabe) -> None:
         """De-Aktiviere Zeitprogramm für Raum 1."""
         if not isinstance(value, Freigabe):
             raise TypeError
-        return self._write_register(500, value)
+        self._write_register(500, value)
 
     @property
     def betriebsstunden_luefter_gesamt(self) -> timedelta:

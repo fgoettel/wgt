@@ -2,10 +2,12 @@
 import json
 import logging
 from datetime import timedelta
-from enum import Enum
+from enum import Enum, EnumMeta
+from typing import Any, Dict, List, Union
 
 from aiohttp import web
-from aiohttp.web import json_response
+from aiohttp.web_request import Request
+from aiohttp.web_response import Response
 
 from wgt import WGT, __version__
 from wgt.types import Unit
@@ -24,7 +26,7 @@ WGT_VERSION = "1.06"
 WGT_URL = "/status/"
 
 
-def populate_put():
+def populate_put() -> None:
     """Populate the put endpoint list."""
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         for attr in ENDPOINTS:
@@ -43,23 +45,25 @@ def populate_put():
 
 
 @routes.get("/")
-async def info(request) -> json_response:
+async def info(request: Request) -> Response:
     """Return version of the WGT module."""
-    print(request)
-    data = {"version": __version__, "wgt_url": WGT_URL}
+    # pylint: disable=unused-argument
+    data: Dict[str, Union[List, str]] = {}
+    data["version"] = __version__
+    data["wgt_url"] = WGT_URL
     data["endpoints_get"] = ENDPOINTS
-    data["endpoints_put"] = ENDPOINTS_PUT
-    return json_response(data)
+    data["endpoints_put"] = list(ENDPOINTS_PUT.keys())
+    return web.json_response(data)
 
 
-def validate_endpoint_get(endpoint):
+def validate_endpoint_get(endpoint: str) -> None:
     """Ensure that the given endpoint is valid. If not raise a 404."""
     if endpoint not in ENDPOINTS:
         logging.info("Failed to get %s", endpoint)
         raise web.HTTPNotFound
 
 
-def validate_endpoint_put(endpoint):
+def validate_endpoint_put(endpoint: str) -> None:
     """Ensure that the given endpoint is valid. If not raise a 405."""
     validate_endpoint_get(endpoint)
     if endpoint not in ENDPOINTS_PUT.keys():
@@ -67,8 +71,31 @@ def validate_endpoint_put(endpoint):
         raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
 
 
+def value_to_enum(value: str, enum_class: EnumMeta) -> Any:
+    """Translate a value to an enum.
+
+    Returns Enum on success, otherwise a HTTPUnprocessableEntity error
+    is raised.
+    """
+
+    try:
+        value_int = int(value)
+    except ValueError as int_conversion_error:
+        raise web.HTTPUnprocessableEntity(
+            reason="Couldnt transform value to int as required for enum."
+        ) from int_conversion_error
+
+    try:
+        value_typed = enum_class(value_int)
+    except ValueError as enum_conversion_error:
+        raise web.HTTPUnprocessableEntity(
+            reason="Invalid value for desired enum."
+        ) from enum_conversion_error
+    return value_typed
+
+
 @routes.put(WGT_URL + "{endpoint}")
-async def put_status(request):
+async def put_status(request: Request) -> Response:
     """Set a status of the wgt."""
 
     # Get endpoint name
@@ -99,16 +126,35 @@ async def put_status(request):
             reason="Need either name or value in request."
         )
 
-    raise web.HTTPNotImplemented
+    # Convert received input to expected format
+    type_ = ENDPOINTS_PUT[endpoint]
+    value_typed = None
+    if value is not None:
+        if issubclass(type_, Enum):
+            value_typed = value_to_enum(value, type_)
+        else:
+            raise web.HTTPNotImplemented
+    else:
+        raise web.HTTPNotImplemented
+
+    # Check if we have a sound value
+    if value_typed is None:
+        raise web.HTTPInternalServerError
+
+    # Set the typed value
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        setattr(wgt, endpoint, value_typed)
+    raise web.HTTPOk
 
 
 @routes.get(WGT_URL + "{attribute}")
-async def get_status(request):
+async def get_status(request: Request) -> Response:
     """Return status."""
     attribute = request.match_info["attribute"].lower()
 
     # Check if the attribute is a valid endpoint
-    data = {"error": 0}
+    data: Dict[str, Union[str, Dict[str, Union[str, int, float]]]] = {}
+    data = {"error": ""}
     validate_endpoint_get(attribute)
 
     # Connect to wgt and read attribute
@@ -122,7 +168,7 @@ async def get_status(request):
         if status.days > 0:
             data[attribute] = {"name": f"{status.days} Tage", "value": status.days}
         else:
-            minutes = status.seconds * 60
+            minutes = status.seconds / 60
             data[attribute] = {"name": f"{minutes} Minuten", "value": minutes}
     elif status is None:
         data["error"] = f"Endpoint '{attribute}' is not available in your WGT version.'"
