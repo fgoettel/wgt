@@ -87,7 +87,7 @@ def value_to_enum(value: str, enum_class: EnumMeta) -> Any:
         value_typed = enum_class(value_int)
     except ValueError as enum_conversion_error:
         raise web.HTTPUnprocessableEntity(
-            reason="Invalid value for desired enum."
+            reason=f"Invalid value for {enum_class}."
         ) from enum_conversion_error
     return value_typed
 
@@ -118,20 +118,18 @@ async def put_status(request: Request) -> Response:
 
     # Ensure that we he have the expected keywords
     value = data.get("value", None)
-    name = data.get("name", None)
-    if (value is None) and (name is None):
+    if value is None:
         raise web.HTTPUnprocessableEntity(
-            reason="Need either name or value in request."
+            reason="Need 'value' in request."
         )
 
     # Convert received input to expected format
     type_ = ENDPOINTS_PUT[endpoint]
     value_typed = None
-    if value is not None:
-        if issubclass(type_, Enum):
-            value_typed = value_to_enum(value, type_)
-        else:
-            raise web.HTTPNotImplemented
+    if issubclass(type_, Enum):
+        value_typed = value_to_enum(value, type_)
+    elif issubclass(type_, Unit):
+        value_typed = type_(float(value))
     else:
         raise web.HTTPNotImplemented
 
@@ -141,7 +139,10 @@ async def put_status(request: Request) -> Response:
 
     # Set the typed value
     with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
-        setattr(wgt, endpoint, value_typed)
+        try:
+            setattr(wgt, endpoint, value_typed)
+        except ValueError as err:
+            raise web.HTTPUnprocessableEntity(reason=str(err))
     raise web.HTTPOk
 
 

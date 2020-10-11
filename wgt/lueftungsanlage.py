@@ -19,7 +19,7 @@ from wgt.types import (
     Fehler,
     Freigabe,
     Geblaese,
-    HeizKuehl,
+    HeizenKuehlenSteuerung,
     Luftstufe,
     Meldung,
     Prozent,
@@ -197,7 +197,7 @@ class WGT:
 
     @property
     def luftleistung_linear_manuell(self) -> Prozent:
-        """Luftlesitung in Prozent - manuell Einstellung."""
+        """Luftleistung in Prozent - manuell Einstellung."""
         return Prozent(self._read_register(103))
 
     @luftleistung_linear_manuell.setter
@@ -369,14 +369,14 @@ class WGT:
         return self._read_temperature(209)
 
     @property
-    def heizen_kuehlen(self) -> HeizKuehl:
+    def heizen_kuehlen(self) -> HeizenKuehlenSteuerung:
         """Heizen oder Kühl modus."""
-        return HeizKuehl(self._read_register(230))
+        return HeizenKuehlenSteuerung(self._read_register(230))
 
     @heizen_kuehlen.setter
-    def heizen_kuehlen(self, value: HeizKuehl) -> None:
+    def heizen_kuehlen(self, value: HeizenKuehlenSteuerung) -> None:
         """Setze Heiz/Kühl Modus."""
-        if not isinstance(value, HeizKuehl):
+        if not isinstance(value, HeizenKuehlenSteuerung):
             raise TypeError
         self._write_register(230, value)
 

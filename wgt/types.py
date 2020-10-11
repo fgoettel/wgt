@@ -167,7 +167,7 @@ class Vorheizregister(Enum):
 
 
 @unique
-class HeizKuehl(Enum):
+class HeizenKuehlenSteuerung(Enum):
     """Regelungsinformationen zur HeizKühl Funktion der Wärmepumpe."""
 
     Aus = 0
