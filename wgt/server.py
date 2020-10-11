@@ -18,7 +18,7 @@ routes = web.RouteTableDef()
 # . generate POST/PUT for all that allow setattr
 # Profit
 ENDPOINTS = list(WGT.get_all_attributes())
-ENDPOINTS_PUT: List[str] = []
+ENDPOINTS_PUT = {}
 WGT_IP = "10.1.1.29"
 WGT_VERSION = "1.06"
 WGT_URL = "/status/"
@@ -27,14 +27,17 @@ def populate_put():
     """Populate the put endpoint list."""
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         for attr in ENDPOINTS:
+            # Check if it can be set
             try:
                 setattr(wgt, attr, None)
             except AttributeError:
                 continue
             except TypeError:
                 pass
+            # Check the corresponding type
+            type_ = type(getattr(wgt, attr))
 
-            ENDPOINTS_PUT.append(attr)
+            ENDPOINTS_PUT[attr] = type_
     logging.info("Endpoints with put: %s", ENDPOINTS_PUT)
 
 
@@ -53,11 +56,40 @@ def validate_endpoint_get(endpoint):
         raise web.HTTPNotFound
 
 def validate_endpoint_put(endpoint):
-    if endpoint not in ENDPOINTS_PUT:
+    if endpoint not in ENDPOINTS_PUT.keys():
         logging.info("Failed to put %s", endpoint)
         raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
 
+@routes.put(WGT_URL + "{endpoint}")
+async def put_status(request):
 
+    # Get endpoint name
+    endpoint = request.match_info["endpoint"].lower()
+
+    # Validate that this is an actual endpoint
+    validate_endpoint_get(endpoint)
+    validate_endpoint_put(endpoint)
+
+    # Ensure that the data was put as json/application type
+    if not request.content_type == "application/json":
+        raise web.HTTPUnsupportedMediaType(reason="Only application/json ")
+
+    # Try to get the data and translate it to a json
+    text = await request.text()
+    try:
+        data = json.loads(text)
+    except ValueError:
+        raise web.HTTPUnsupportedMediaType(reason="Couldn't convert data to json.")
+    logging.debug("Received %s", data)
+
+    # Ensure that we he have the expected keywords
+    value = data.get("value", None)
+    name = data.get("name", None)
+    if (value is None) and (name is None):
+         raise web.HTTPUnprocessableEntity(reason="Need either name or value in request.")
+
+
+    raise web.HTTPNotImplemented
 
 @routes.get(WGT_URL + "{attribute}")
 async def get_status(request):
