@@ -5,13 +5,14 @@ verify_ssl = true
 
 [dev-packages]
 black = "*"
+bumpversion = "*"
+coverage = "*"
 isort = "*"
 flake8 = "*"
+mypy = "*"
 pydocstyle = "*"
 pylint = "*"
-mypy = "*"
 pytest = "*"
-coverage = "*"
 
 [packages]
 aiohttp = "*"
