@@ -1,8 +1,8 @@
 """Provide the WGT info to other services."""
+import json
 import logging
 from datetime import timedelta
 from enum import Enum
-from typing import List
 
 from aiohttp import web
 from aiohttp.web import json_response
@@ -22,6 +22,7 @@ ENDPOINTS_PUT = {}
 WGT_IP = "10.1.1.29"
 WGT_VERSION = "1.06"
 WGT_URL = "/status/"
+
 
 def populate_put():
     """Populate the put endpoint list."""
@@ -50,24 +51,30 @@ async def info(request) -> json_response:
     data["endpoints_put"] = ENDPOINTS_PUT
     return json_response(data)
 
+
 def validate_endpoint_get(endpoint):
+    """Ensure that the given endpoint is valid. If not raise a 404."""
     if endpoint not in ENDPOINTS:
         logging.info("Failed to get %s", endpoint)
         raise web.HTTPNotFound
 
+
 def validate_endpoint_put(endpoint):
+    """Ensure that the given endpoint is valid. If not raise a 405."""
+    validate_endpoint_get(endpoint)
     if endpoint not in ENDPOINTS_PUT.keys():
         logging.info("Failed to put %s", endpoint)
         raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
 
+
 @routes.put(WGT_URL + "{endpoint}")
 async def put_status(request):
+    """Set a status of the wgt."""
 
     # Get endpoint name
     endpoint = request.match_info["endpoint"].lower()
 
     # Validate that this is an actual endpoint
-    validate_endpoint_get(endpoint)
     validate_endpoint_put(endpoint)
 
     # Ensure that the data was put as json/application type
@@ -78,18 +85,22 @@ async def put_status(request):
     text = await request.text()
     try:
         data = json.loads(text)
-    except ValueError:
-        raise web.HTTPUnsupportedMediaType(reason="Couldn't convert data to json.")
+    except ValueError as data_conversion_error:
+        raise web.HTTPUnsupportedMediaType(
+            reason="Couldn't convert data to json."
+        ) from data_conversion_error
     logging.debug("Received %s", data)
 
     # Ensure that we he have the expected keywords
     value = data.get("value", None)
     name = data.get("name", None)
     if (value is None) and (name is None):
-         raise web.HTTPUnprocessableEntity(reason="Need either name or value in request.")
-
+        raise web.HTTPUnprocessableEntity(
+            reason="Need either name or value in request."
+        )
 
     raise web.HTTPNotImplemented
+
 
 @routes.get(WGT_URL + "{attribute}")
 async def get_status(request):
@@ -122,7 +133,7 @@ async def get_status(request):
     return web.json_response(data)
 
 
-def main():
+def main() -> None:
     """Start the server."""
     populate_put()
     app = web.Application()
