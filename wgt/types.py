@@ -12,7 +12,7 @@ class Unit(ABC):
     # pylint: disable=too-few-public-methods
 
     value: float
-    unit: str
+    unit: str = ""
 
     @property
     def name(self) -> str:

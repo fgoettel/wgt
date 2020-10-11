@@ -45,6 +45,7 @@ def populate_put() -> None:
 @routes.get("/")
 async def info(request: Request) -> Response:
     """Return version of the WGT module."""
+    # TODO: Create info url with datatypes to all endpoints
     # pylint: disable=unused-argument
     data: Dict[str, Union[List, str]] = {}
     data["version"] = __version__
@@ -119,9 +120,7 @@ async def put_status(request: Request) -> Response:
     # Ensure that we he have the expected keywords
     value = data.get("value", None)
     if value is None:
-        raise web.HTTPUnprocessableEntity(
-            reason="Need 'value' in request."
-        )
+        raise web.HTTPUnprocessableEntity(reason="Need 'value' in request.")
 
     # Convert received input to expected format
     type_ = ENDPOINTS_PUT[endpoint]
@@ -180,7 +179,7 @@ async def get_status(request: Request) -> Response:
 
 def main() -> None:
     """Start the server."""
-    populate_put() # only do once needed
+    populate_put()  # TODO: only do once needed
     app = web.Application()
     app["wgt_ip"] = "10.1.1.29"
     app["wgt_version"] = "1.06"
