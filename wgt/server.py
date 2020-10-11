@@ -19,27 +19,52 @@ routes = web.RouteTableDef()
 # Profit
 ENDPOINTS = list(WGT.get_all_attributes())
 ENDPOINTS_PUT: List[str] = []
+WGT_URL = "/status/"
+
+def populate_put():
+    """Populate the put endpoint list."""
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        for attr in ENDPOINTS:
+            try:
+                setattr(wgt, attr, None)
+            except AttributeError:
+                continue
+            except TypeError:
+                pass
+
+            ENDPOINTS_PUT.append(attr)
+    logging.info("Endpoints with put: %s", ENDPOINTS_PUT)
 
 
 @routes.get("/")
-async def version(request) -> json_response:
+async def info(request) -> json_response:
     """Return version of the WGT module."""
     print(request)
-    data = {"version": __version__, "wgt_url": "/wgt/"}
+    data = {"version": __version__, "wgt_url": WGT_URL}
+    data["endpoints_get"] = ENDPOINTS
+    data["endpoints_put"] = ENDPOINTS_PUT
     return json_response(data)
 
+def validate_endpoint_get(endpoint):
+    if endpoint not in ENDPOINTS:
+        logging.info("Failed to get %s", endpoint)
+        raise web.HTTPNotFound
 
-@routes.get("/status/{attribute}")
-async def stosslueftung(request):
-    """Return stosslueftung modus."""
-    print(request)
+def validate_endpoint_put(endpoint):
+    if endpoint not in ENDPOINTS_PUT:
+        logging.info("Failed to put %s", endpoint)
+        raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
+
+
+
+@routes.get(WGT_URL + "{attribute}")
+async def get_status(request):
+    """Return status."""
     attribute = request.match_info["attribute"].lower()
 
     # Check if the attribute is a valid endpoint
     data = {"error": 0}
-    if attribute not in ENDPOINTS:
-        logging.info("Failed to get %s", attribute)
-        raise web.HTTPNotFound
+    validate_endpoint_get(attribute)
 
     # Connect to wgt and read attribute
     with WGT("10.1.1.29", version="1.06") as wgt:
@@ -65,6 +90,7 @@ async def stosslueftung(request):
 
 def main():
     """Start the server."""
+    populate_put()
     app = web.Application()
     app.add_routes(routes)
     web.run_app(app)
