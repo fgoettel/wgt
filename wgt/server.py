@@ -19,6 +19,8 @@ routes = web.RouteTableDef()
 # Profit
 ENDPOINTS = list(WGT.get_all_attributes())
 ENDPOINTS_PUT: List[str] = []
+WGT_IP = "10.1.1.29"
+WGT_VERSION = "1.06"
 WGT_URL = "/status/"
 
 def populate_put():
@@ -67,7 +69,7 @@ async def get_status(request):
     validate_endpoint_get(attribute)
 
     # Connect to wgt and read attribute
-    with WGT("10.1.1.29", version="1.06") as wgt:
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         status = getattr(wgt, attribute)
 
     # Convert status to a dict
