@@ -21,14 +21,12 @@ routes = web.RouteTableDef()
 # Profit
 ENDPOINTS = list(WGT.get_all_attributes())
 ENDPOINTS_PUT = {}
-WGT_IP = "10.1.1.29"
-WGT_VERSION = "1.06"
 WGT_URL = "/status/"
 
 
 def populate_put() -> None:
     """Populate the put endpoint list."""
-    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+    with WGT(ip="10.1.1.29", version="1.06") as wgt:
         for attr in ENDPOINTS:
             # Check if it can be set
             try:
@@ -142,7 +140,7 @@ async def put_status(request: Request) -> Response:
         raise web.HTTPInternalServerError
 
     # Set the typed value
-    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+    with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
         setattr(wgt, endpoint, value_typed)
     raise web.HTTPOk
 
@@ -158,7 +156,7 @@ async def get_status(request: Request) -> Response:
     validate_endpoint_get(attribute)
 
     # Connect to wgt and read attribute
-    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+    with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
         status = getattr(wgt, attribute)
 
     # Convert status to a dict
@@ -181,8 +179,10 @@ async def get_status(request: Request) -> Response:
 
 def main() -> None:
     """Start the server."""
-    populate_put()
+    populate_put() # only do once needed
     app = web.Application()
+    app["wgt_ip"] = "10.1.1.29"
+    app["wgt_version"] = "1.06"
     app.add_routes(routes)
     web.run_app(app)
 
