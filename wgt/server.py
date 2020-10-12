@@ -19,55 +19,68 @@ routes = web.RouteTableDef()
 # . generate GET for all
 # . generate POST/PUT for all that allow setattr
 # Profit
-ENDPOINTS = list(WGT.get_all_attributes())
-ENDPOINTS_PUT = {}
+
 WGT_URL = "/status/"
 
 
-def populate_put() -> None:
+def put_endpoints(
+    endpoints_get: List[str],
+) -> Dict[str, Any]:
     """Populate the put endpoint list."""
+    endpoints_put = {}
     with WGT(ip="10.1.1.29", version="1.06") as wgt:
-        for attr in ENDPOINTS:
+        for endpoint in endpoints_get:
             # Check if it can be set
             try:
-                setattr(wgt, attr, None)
+                setattr(wgt, endpoint, None)
             except AttributeError:
                 continue
             except TypeError:
                 pass
             # Check the corresponding type
-            type_ = type(getattr(wgt, attr))
+            type_ = type(getattr(wgt, endpoint))
+            endpoints_put[endpoint] = type_
+    return endpoints_put
 
-            ENDPOINTS_PUT[attr] = type_
-    logging.info("Endpoints with put: %s", ENDPOINTS_PUT)
+
+def get_endpoints() -> List[str]:
+    """Get endpoint names."""
+    return list(WGT.get_all_attributes())
 
 
 @routes.get("/")
 async def info(request: Request) -> Response:
     """Return version of the WGT module."""
-    # TODO: Create info url with datatypes to all endpoints
-    # pylint: disable=unused-argument
     data: Dict[str, Union[List, str]] = {}
     data["version"] = __version__
     data["wgt_url"] = WGT_URL
-    data["endpoints_get"] = ENDPOINTS
-    data["endpoints_put"] = list(ENDPOINTS_PUT.keys())
+    data["get_endpoints"] = request.app["get_endpoints"]
+    data["put_endpoints"] = list(request.app["put_endpoints"].keys())
     return web.json_response(data)
 
 
-def validate_endpoint_get(endpoint: str) -> None:
+def validate_endpoint_get(request: Request) -> str:
     """Ensure that the given endpoint is valid. If not raise a 404."""
-    if endpoint not in ENDPOINTS:
+
+    endpoint = str(request.match_info["endpoint"]).lower()
+    endpoint_list = request.app["get_endpoints"]
+
+    if endpoint not in endpoint_list:
         logging.info("Failed to get %s", endpoint)
         raise web.HTTPNotFound
 
+    return endpoint
 
-def validate_endpoint_put(endpoint: str) -> None:
+
+def validate_endpoint_put(request: Request) -> str:
     """Ensure that the given endpoint is valid. If not raise a 405."""
-    validate_endpoint_get(endpoint)
-    if endpoint not in ENDPOINTS_PUT.keys():
+    endpoint_list = request.app["get_endpoints"]
+
+    endpoint = validate_endpoint_get(request)
+    if endpoint not in endpoint_list:
         logging.info("Failed to put %s", endpoint)
         raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
+    return endpoint
 
 
 def value_to_enum(value: str, enum_class: EnumMeta) -> Any:
@@ -97,11 +110,8 @@ def value_to_enum(value: str, enum_class: EnumMeta) -> Any:
 async def put_status(request: Request) -> Response:
     """Set a status of the wgt."""
 
-    # Get endpoint name
-    endpoint = request.match_info["endpoint"].lower()
-
     # Validate that this is an actual endpoint
-    validate_endpoint_put(endpoint)
+    endpoint = validate_endpoint_put(request=request)
 
     # Ensure that the data was put as json/application type
     if not request.content_type == "application/json":
@@ -123,7 +133,7 @@ async def put_status(request: Request) -> Response:
         raise web.HTTPUnprocessableEntity(reason="Need 'value' in request.")
 
     # Convert received input to expected format
-    type_ = ENDPOINTS_PUT[endpoint]
+    type_ = request.app["get_endpoints"][endpoint]
     value_typed = None
     if issubclass(type_, Enum):
         value_typed = value_to_enum(value, type_)
@@ -145,33 +155,33 @@ async def put_status(request: Request) -> Response:
     raise web.HTTPOk
 
 
-@routes.get(WGT_URL + "{attribute}")
+@routes.get(WGT_URL + "{endpoint}")
 async def get_status(request: Request) -> Response:
     """Return status."""
-    attribute = request.match_info["attribute"].lower()
 
     # Check if the attribute is a valid endpoint
+    endpoint = validate_endpoint_get(request)
+
     data: Dict[str, Union[str, Dict[str, Union[str, int, float]]]] = {}
-    data = {"error": ""}
-    validate_endpoint_get(attribute)
+    data["error"] = ""
 
     # Connect to wgt and read attribute
     with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
-        status = getattr(wgt, attribute)
+        status = getattr(wgt, endpoint)
 
     # Convert status to a dict
     if isinstance(status, (Enum, Unit)):
-        data[attribute] = {"name": status.name, "value": status.value}
+        data[endpoint] = {"name": status.name, "value": status.value}
     elif isinstance(status, timedelta):
         if status.days > 0:
-            data[attribute] = {"name": f"{status.days} Tage", "value": status.days}
+            data[endpoint] = {"name": f"{status.days} Tage", "value": status.days}
         else:
             minutes = status.seconds / 60
-            data[attribute] = {"name": f"{minutes} Minuten", "value": minutes}
+            data[endpoint] = {"name": f"{minutes} Minuten", "value": minutes}
     elif status is None:
-        data["error"] = f"Endpoint '{attribute}' is not available in your WGT version.'"
+        data["error"] = f"Endpoint '{endpoint}' is not available in your WGT version.'"
     else:
-        logging.error("Couldn't parse status of %s", attribute)
+        logging.error("Couldn't parse status of %s", endpoint)
         raise web.HTTPInternalServerError
 
     return web.json_response(data)
@@ -179,10 +189,12 @@ async def get_status(request: Request) -> Response:
 
 def main() -> None:
     """Start the server."""
-    populate_put()  # TODO: only do once needed
     app = web.Application()
     app["wgt_ip"] = "10.1.1.29"
     app["wgt_version"] = "1.06"
+    get_endpoint_list = get_endpoints()
+    app["get_endpoints"] = get_endpoint_list
+    app["put_endpoints"] = put_endpoints(get_endpoint_list)
     app.add_routes(routes)
     web.run_app(app)
 
