@@ -216,7 +216,7 @@ async def get_status(request: Request) -> Response:
     return web.json_response(data)
 
 
-def main(port=8080) -> None:
+def main(port: int = 8080) -> None:
     """Start the server."""
     wgt_ip = "10.1.1.29"
     wgt_version = "1.06"
