@@ -23,13 +23,12 @@ routes = web.RouteTableDef()
 WGT_URL = "/status/"
 
 
-def put_endpoints(
-    endpoints_get: List[str],
-) -> Dict[str, Any]:
+def put_endpoints(endpoints_get: Dict[str, Any]) -> Dict[str, Any]:
     """Populate the put endpoint list."""
     endpoints_put = {}
     with WGT(ip="10.1.1.29", version="1.06") as wgt:
-        for endpoint in endpoints_get:
+        # TODO: Do it without instantiation of a WGT
+        for endpoint, type_ in endpoints_get.items():
             # Check if it can be set
             try:
                 setattr(wgt, endpoint, None)
@@ -43,9 +42,16 @@ def put_endpoints(
     return endpoints_put
 
 
-def get_endpoints() -> List[str]:
+def get_endpoints() -> Dict[str, Any]:
     """Get endpoint names."""
-    return list(WGT.get_all_attributes())
+    endpoints_get = {}
+    with WGT(ip="10.1.1.29", version="1.06") as wgt:
+        for endpoint in WGT.get_all_attributes():
+            # Get the corresponding type
+            # TODO: Do it without instantiation of a WGT
+            type_ = type(getattr(wgt, endpoint))
+            endpoints_get[endpoint] = type_
+    return endpoints_get
 
 
 @routes.get("/")
@@ -54,7 +60,7 @@ async def info(request: Request) -> Response:
     data: Dict[str, Union[List, str]] = {}
     data["version"] = __version__
     data["wgt_url"] = WGT_URL
-    data["get_endpoints"] = request.app["get_endpoints"]
+    data["get_endpoints"] = list(request.app["get_endpoints"].keys())
     data["put_endpoints"] = list(request.app["put_endpoints"].keys())
     return web.json_response(data)
 
@@ -63,9 +69,8 @@ def validate_endpoint_get(request: Request) -> str:
     """Ensure that the given endpoint is valid. If not raise a 404."""
 
     endpoint = str(request.match_info["endpoint"]).lower()
-    endpoint_list = request.app["get_endpoints"]
 
-    if endpoint not in endpoint_list:
+    if endpoint not in request.app["get_endpoints"]:
         logging.info("Failed to get %s", endpoint)
         raise web.HTTPNotFound
 
@@ -74,10 +79,10 @@ def validate_endpoint_get(request: Request) -> str:
 
 def validate_endpoint_put(request: Request) -> str:
     """Ensure that the given endpoint is valid. If not raise a 405."""
-    endpoint_list = request.app["get_endpoints"]
 
     endpoint = validate_endpoint_get(request)
-    if endpoint not in endpoint_list:
+
+    if endpoint not in request.app["put_endpoints"]:
         logging.info("Failed to put %s", endpoint)
         raise web.HTTPMethodNotAllowed(method="put", allowed_methods="get")
     return endpoint
