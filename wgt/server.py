@@ -104,6 +104,7 @@ async def meta(request: Request) -> Response:
     data: Dict[str, Union[List, str]] = {}
     data["version"] = __version__
     data["status_url"] = STATUS_URL
+    data["info_url"] = INFO_URL
     data["get_endpoints"] = list(request.app["get_endpoints"].keys())
     data["put_endpoints"] = list(request.app["put_endpoints"].keys())
     return web.json_response(data)
