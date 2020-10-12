@@ -216,7 +216,7 @@ async def get_status(request: Request) -> Response:
     return web.json_response(data)
 
 
-def main() -> None:
+def main(port=8080) -> None:
     """Start the server."""
     wgt_ip = "10.1.1.29"
     wgt_version = "1.06"
@@ -230,7 +230,8 @@ def main() -> None:
         wgt_ip=wgt_ip, wgt_version=wgt_version, endpoints_get=get_endpoint_list
     )
     app.add_routes(routes)
-    web.run_app(app)
+
+    web.run_app(app, port=port)
 
 
 if __name__ == "__main__":
