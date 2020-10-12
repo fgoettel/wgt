@@ -13,20 +13,17 @@ from wgt import WGT, __version__
 from wgt.types import Unit
 
 routes = web.RouteTableDef()
-# Todos:
-# . generate wgt instance
-# . iterate over sensible values (see read all)
-# . generate GET for all
-# . generate POST/PUT for all that allow setattr
-# Profit
 
-WGT_URL = "/status/"
+STATUS_URL = "/status/"
+INFO_URL = "/info/"
 
 
-def put_endpoints(endpoints_get: Dict[str, Any]) -> Dict[str, Any]:
+def put_endpoints(
+    wgt_ip: str, wgt_version: str, endpoints_get: Dict[str, Any]
+) -> Dict[str, Any]:
     """Populate the put endpoint list."""
     endpoints_put = {}
-    with WGT(ip="10.1.1.29", version="1.06") as wgt:
+    with WGT(ip=wgt_ip, version=wgt_version) as wgt:
         # TODO: Do it without instantiation of a WGT
         for endpoint, type_ in endpoints_get.items():
             # Check if it can be set
@@ -42,27 +39,16 @@ def put_endpoints(endpoints_get: Dict[str, Any]) -> Dict[str, Any]:
     return endpoints_put
 
 
-def get_endpoints() -> Dict[str, Any]:
+def get_endpoints(wgt_ip: str, wgt_version: str) -> Dict[str, Any]:
     """Get endpoint names."""
     endpoints_get = {}
-    with WGT(ip="10.1.1.29", version="1.06") as wgt:
+    with WGT(ip=wgt_ip, version=wgt_version) as wgt:
         for endpoint in WGT.get_all_attributes():
             # Get the corresponding type
             # TODO: Do it without instantiation of a WGT
             type_ = type(getattr(wgt, endpoint))
             endpoints_get[endpoint] = type_
     return endpoints_get
-
-
-@routes.get("/")
-async def info(request: Request) -> Response:
-    """Return version of the WGT module."""
-    data: Dict[str, Union[List, str]] = {}
-    data["version"] = __version__
-    data["wgt_url"] = WGT_URL
-    data["get_endpoints"] = list(request.app["get_endpoints"].keys())
-    data["put_endpoints"] = list(request.app["put_endpoints"].keys())
-    return web.json_response(data)
 
 
 def validate_endpoint_get(request: Request) -> str:
@@ -111,7 +97,45 @@ def value_to_enum(value: str, enum_class: EnumMeta) -> Any:
     return value_typed
 
 
-@routes.put(WGT_URL + "{endpoint}")
+@routes.get("/")
+async def meta(request: Request) -> Response:
+    """Return version of the WGT module."""
+    # Provide types for all endpoints
+    data: Dict[str, Union[List, str]] = {}
+    data["version"] = __version__
+    data["status_url"] = STATUS_URL
+    data["get_endpoints"] = list(request.app["get_endpoints"].keys())
+    data["put_endpoints"] = list(request.app["put_endpoints"].keys())
+    return web.json_response(data)
+
+
+@routes.get(INFO_URL + "{endpoint}")
+async def info(request: Request) -> Response:
+    """Add type information for all endpoints."""
+    endpoint = validate_endpoint_get(request)
+
+    # Prepare return value
+    data: Dict[str, Any] = {}
+
+    # Get data
+    type_ = request.app["get_endpoints"][endpoint]
+    type_str = str(type_)
+    if issubclass(type_, Enum):
+        enum_values = []
+        for val in type_:
+            enum_values.append((val.name, val.value))
+        data[type_str] = enum_values
+    elif issubclass(type_, Unit):
+        data[type_str] = "float"
+    elif issubclass(type_, timedelta):
+        data[type_str] = "Minutes or Days"
+    else:
+        raise web.HTTPNotImplemented(reason=type_str)
+
+    return web.json_response(data)
+
+
+@routes.put(STATUS_URL + "{endpoint}")
 async def put_status(request: Request) -> Response:
     """Set a status of the wgt."""
 
@@ -160,7 +184,7 @@ async def put_status(request: Request) -> Response:
     raise web.HTTPOk
 
 
-@routes.get(WGT_URL + "{endpoint}")
+@routes.get(STATUS_URL + "{endpoint}")
 async def get_status(request: Request) -> Response:
     """Return status."""
 
@@ -168,7 +192,6 @@ async def get_status(request: Request) -> Response:
     endpoint = validate_endpoint_get(request)
 
     data: Dict[str, Union[str, Dict[str, Union[str, int, float]]]] = {}
-    data["error"] = ""
 
     # Connect to wgt and read attribute
     with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
@@ -194,12 +217,17 @@ async def get_status(request: Request) -> Response:
 
 def main() -> None:
     """Start the server."""
+    wgt_ip = "10.1.1.29"
+    wgt_version = "1.06"
+
     app = web.Application()
-    app["wgt_ip"] = "10.1.1.29"
-    app["wgt_version"] = "1.06"
-    get_endpoint_list = get_endpoints()
+    app["wgt_ip"] = wgt_ip
+    app["wgt_version"] = wgt_version
+    get_endpoint_list = get_endpoints(wgt_ip=wgt_ip, wgt_version=wgt_version)
     app["get_endpoints"] = get_endpoint_list
-    app["put_endpoints"] = put_endpoints(get_endpoint_list)
+    app["put_endpoints"] = put_endpoints(
+        wgt_ip=wgt_ip, wgt_version=wgt_version, endpoints_get=get_endpoint_list
+    )
     app.add_routes(routes)
     web.run_app(app)
 
