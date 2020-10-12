@@ -7,9 +7,6 @@ from setuptools import find_packages, setup
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-with open("HISTORY.rst") as history_file:
-    history = history_file.read()
-
 requirements = ["pymodbus==2.4.0"]
 
 test_requirements = [
@@ -28,7 +25,7 @@ setup(
     ],
     description="Connect a Schwörer WGT to your home",
     install_requires=requirements,
-    long_description=readme + "\n\n" + history,
+    long_description=readme,
     include_package_data=True,
     keywords="wgt",
     name="wgt",
