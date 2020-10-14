@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-requirements = ["pymodbus==2.4.0", "aiohttp==3.6.2"]
+requirements = ["pymodbus==2.4.0"]
 
 test_requirements = [
     "pytest>=3",
