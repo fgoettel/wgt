@@ -1,5 +1,4 @@
 """Provide the WGT info to other services."""
-import json
 import logging
 from datetime import timedelta
 from enum import Enum, EnumMeta
@@ -18,37 +17,22 @@ STATUS_URL = "/status/"
 INFO_URL = "/info/"
 
 
-def put_endpoints(
-    wgt_ip: str, wgt_version: str, endpoints_get: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Populate the put endpoint list."""
-    endpoints_put = {}
-    with WGT(ip=wgt_ip, version=wgt_version) as wgt:
-        # TODO: Do it without instantiation of a WGT
-        for endpoint, type_ in endpoints_get.items():
-            # Check if it can be set
-            try:
-                setattr(wgt, endpoint, None)
-            except AttributeError:
-                continue
-            except TypeError:
-                pass
-            # Check the corresponding type
-            type_ = type(getattr(wgt, endpoint))
-            endpoints_put[endpoint] = type_
-    return endpoints_put
+def put_endpoints() -> Dict[str, Any]:
+    """Return setter endpoints."""
+    endpoints = {}
+    for endpoint in WGT.properties_set():
+        type_ = WGT.property_type(endpoint)
+        endpoints[endpoint] = type_
+    return endpoints
 
 
-def get_endpoints(wgt_ip: str, wgt_version: str) -> Dict[str, Any]:
-    """Get endpoint names."""
-    endpoints_get = {}
-    with WGT(ip=wgt_ip, version=wgt_version) as wgt:
-        for endpoint in WGT.get_all_attributes():
-            # Get the corresponding type
-            # TODO: Do it without instantiation of a WGT
-            type_ = type(getattr(wgt, endpoint))
-            endpoints_get[endpoint] = type_
-    return endpoints_get
+def get_endpoints() -> Dict[str, Any]:
+    """Return getter endpoints."""
+    endpoints = {}
+    for endpoint in WGT.properties_get():
+        type_ = WGT.property_type(endpoint)
+        endpoints[endpoint] = type_
+    return endpoints
 
 
 def validate_endpoint_get(request: Request) -> str:
@@ -59,7 +43,6 @@ def validate_endpoint_get(request: Request) -> str:
     if endpoint not in request.app["get_endpoints"]:
         logging.info("Failed to get %s", endpoint)
         raise web.HTTPNotFound
-
     return endpoint
 
 
@@ -148,9 +131,9 @@ async def put_status(request: Request) -> Response:
         raise web.HTTPUnsupportedMediaType(reason="Only application/json ")
 
     # Try to get the data and translate it to a json
-    text = await request.text()
+    data = {}
     try:
-        data = json.loads(text)
+        data = await request.json()
     except ValueError as data_conversion_error:
         raise web.HTTPUnsupportedMediaType(
             reason="Couldn't convert data to json."
@@ -163,7 +146,7 @@ async def put_status(request: Request) -> Response:
         raise web.HTTPUnprocessableEntity(reason="Need 'value' in request.")
 
     # Convert received input to expected format
-    type_ = request.app["get_endpoints"][endpoint]
+    type_ = request.app["set_endpoints"][endpoint]
     value_typed = None
     if issubclass(type_, Enum):
         value_typed = value_to_enum(value, type_)
@@ -192,7 +175,7 @@ async def get_status(request: Request) -> Response:
     # Check if the attribute is a valid endpoint
     endpoint = validate_endpoint_get(request)
 
-    data: Dict[str, Union[str, Dict[str, Union[str, int, float]]]] = {}
+    data: Dict[str, Any] = {}
 
     # Connect to wgt and read attribute
     with WGT(ip=request.app["wgt_ip"], version=request.app["wgt_version"]) as wgt:
@@ -218,17 +201,12 @@ async def get_status(request: Request) -> Response:
 
 def main(port: int = 8080) -> None:
     """Start the server."""
-    wgt_ip = "10.1.1.29"
-    wgt_version = "1.06"
 
     app = web.Application()
-    app["wgt_ip"] = wgt_ip
-    app["wgt_version"] = wgt_version
-    get_endpoint_list = get_endpoints(wgt_ip=wgt_ip, wgt_version=wgt_version)
-    app["get_endpoints"] = get_endpoint_list
-    app["put_endpoints"] = put_endpoints(
-        wgt_ip=wgt_ip, wgt_version=wgt_version, endpoints_get=get_endpoint_list
-    )
+    app["wgt_ip"] = "10.1.1.29"
+    app["wgt_version"] = "1.06"
+    app["get_endpoints"] = get_endpoints()
+    app["put_endpoints"] = put_endpoints()
     app.add_routes(routes)
 
     web.run_app(app, port=port)

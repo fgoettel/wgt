@@ -52,7 +52,7 @@ lint: ## ensure clean code
 	python -m black .
 	python -m flake8 .
 	python -m pydocstyle
-	python -m pylint wgt
+	python -m pylint wgt examples
 	python -m mypy wgt
 
 test: ## run tests quickly with the default Python
