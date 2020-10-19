@@ -1,4 +1,4 @@
-"""Define types for the different stati of the WGT."""
+"""Define types for the different states of the WGT."""
 
 from abc import ABC
 from dataclasses import dataclass
@@ -8,8 +8,6 @@ from enum import Enum, unique
 @dataclass
 class Unit(ABC):
     """Abstract class to derive units."""
-
-    # pylint: disable=too-few-public-methods
 
     value: float
     unit: str = ""

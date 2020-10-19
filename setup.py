@@ -4,7 +4,7 @@
 
 from setuptools import find_packages, setup
 
-with open("README.rst") as readme_file:
+with open("README.md") as readme_file:
     readme = readme_file.read()
 
 requirements = ["pymodbus==2.4.0"]
@@ -18,9 +18,7 @@ setup(
     author_email="fabian.goettel@gmail.com",
     python_requires=">=3.9",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
-        "Natural Language :: English",
         'Programming Language :: Python :: 3.9"',
     ],
     description="Connect a Schwörer WGT to your home",
