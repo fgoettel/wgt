@@ -5,7 +5,7 @@ from datetime import timedelta
 from decimal import Decimal
 from enum import Enum
 from types import TracebackType
-from typing import Generator, Optional, Union
+from typing import Any, List, Optional, Union, get_type_hints
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
@@ -632,26 +632,27 @@ class WGT:
         return Meldung.Inaktiv
 
     @classmethod
-    def get_all_attributes(cls) -> Generator[str, None, None]:
-        """Return all attributes of the WGT."""
+    def properties_get(cls) -> List[str]:
+        """Return all properties."""
+        return [n for n in dir(cls) if isinstance(getattr(cls, n), property)]
 
-        excludes = (
-            "get_all_attributes",
-            "read_all",
-        )
-        for attr in dir(cls):
-            if attr.startswith("_") or (attr in excludes):
-                continue
-            yield attr
+    @classmethod
+    def properties_set(cls) -> List[str]:
+        """Return all properties that can be set."""
+        properties = cls.properties_get()
+        return [n for n in properties if callable(getattr(cls, n).fset)]
+
+    @classmethod
+    def property_type(cls, property_name: str) -> Any:
+        """Return type of given property."""
+        return get_type_hints(getattr(cls, property_name).fget)["return"]
 
     def read_all(self) -> None:
         """Read and logger.info all properties."""
 
         self.logger.info("Reading all information from WGT")
-        for attr in self.get_all_attributes():
-
+        for attr in self.properties_get():
             value = getattr(self, attr)
-
             self.logger.info("%s:\n\t%s", attr, value)
 
 
