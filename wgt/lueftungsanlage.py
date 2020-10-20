@@ -87,7 +87,7 @@ class WGT:
     _addr_geraetefilter_verschmutzt = 245
     _addr_geraetefilter_vorgelagert_verschmutzt = 246
     _addr_niedertarif_abgeschaltet = 247
-    _addr_versorgungsspanung_abgeschaltet = 248
+    _addr_versorgungsspannung_abgeschaltet = 248
     _addr_pressostat = 250
     _addr_evu_sperre_extern = 251
     _addr_heizmodul_testbetrieb = 252
@@ -554,7 +554,7 @@ class WGT:
     @property
     def versorgungsspannung_abgeschaltet(self) -> Meldung:
         """Ist die Versorgungsspannung abgeschalten."""
-        return Meldung(self._read_register(self._addr_versorgungsspanung_abgeschaltet))
+        return Meldung(self._read_register(self._addr_versorgungsspannung_abgeschaltet))
 
     @property
     def pressostat(self) -> Meldung:

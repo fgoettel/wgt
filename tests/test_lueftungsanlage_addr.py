@@ -55,7 +55,7 @@ def test_addr():
     assert WGT._addr_geraetefilter_verschmutzt == 245
     assert WGT._addr_geraetefilter_vorgelagert_verschmutzt == 246
     assert WGT._addr_niedertarif_abgeschaltet == 247
-    assert WGT._addr_versorgungsspanung_abgeschaltet == 248
+    assert WGT._addr_versorgungsspannung_abgeschaltet == 248
     assert WGT._addr_pressostat == 250
     assert WGT._addr_evu_sperre_extern == 251
     assert WGT._addr_heizmodul_testbetrieb == 252
