@@ -111,5 +111,26 @@ def test_parameter_addr_set(mocker, sut):
     wgt.client.write_registers.assert_called_once_with(*expected_call_param)
 
 
+def test_read_all(mocker):
+    """Test that the read-all functions reads all properties."""
+    class Response():
+        """Fake a response."""
+        registers = [0]
+
+    # Patch connection function
+    mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
+    mocker.patch("pymodbus.client.sync.ModbusTcpClient.read_holding_registers", return_value=Response)
+
+    # Read attr
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        mocker.spy(wgt.client, "read_holding_registers")
+        wgt.read_all()
+
+    # Verify call count
+    expected_call_count = len(WGT.properties_get()) + 12 # Meldungen are read twice for "any_meldung"
+    assert wgt.client.read_holding_registers.call_count == expected_call_count
+
+
+
 if __name__ == "__main__":
     pytest.main()
