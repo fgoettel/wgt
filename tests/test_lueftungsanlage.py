@@ -2,12 +2,13 @@
 
 """Tests for `wgt` package."""
 
-from decimal import Decimal
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 
 from wgt import WGT
+from wgt.types import Betriebsart
 
 WGT_IP = "127.0.0.1"
 WGT_VERSION = "1.10"
@@ -134,6 +135,50 @@ def test_read_all(pymodbus_mocked, mocker):
         len(WGT.properties_get()) + 12
     )  # Meldungen are read twice for "any_meldung"
     assert wgt.client.read_holding_registers.call_count == expected_call_count
+
+
+def test_write_error(pymodbus_mocked, mocker):
+    """Ensure that we detect an error on writing."""
+
+    class Failure:
+        """Mock a successful response."""
+
+        @staticmethod
+        def isError():
+            return True
+
+    mocker.patch(
+        "pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Failure
+    )
+
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        with pytest.raises(RuntimeError):
+            wgt.betriebsart = Betriebsart(0)
+
+
+def test_read_errors(pymodbus_mocked, mocker):
+    """Excercise errors on reading."""
+
+    class Response:
+        """Fake a response."""
+
+        registers = ["foo"]
+
+    mocker.patch(
+        "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
+        return_value=Response,
+    )
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        with pytest.raises(ValueError):
+            wgt.betriebsart
+
+    mocker.patch(
+        "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
+        return_value=None,
+    )
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        with pytest.raises(AttributeError):
+            wgt.betriebsart
 
 
 if __name__ == "__main__":
