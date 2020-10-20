@@ -71,8 +71,14 @@ def test_parameter_addr_set(mocker, sut):
     Ensure that the correct address is set.
     """
     # Patch connection function
+    class Success():
+        """Mock a successful response."""
+        @staticmethod
+        def isError():
+            return False
+
     mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.write_registers")
+    mocker.patch("pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Success())
 
     # Set attr, create type dynamically
     value_plain = 1
@@ -89,9 +95,7 @@ def test_parameter_addr_set(mocker, sut):
     value = WGT.property_type(sut)(value_plain)
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         mocker.spy(wgt.client, "write_registers")
-        with pytest.raises(RuntimeError):
-            # TODO: patch write_regiser to return asuccesfull write
-            setattr(wgt, sut, value)
+        setattr(wgt, sut, value)
 
     # Verify address
     expected_addr = getattr(WGT, "_addr_" + sut)
