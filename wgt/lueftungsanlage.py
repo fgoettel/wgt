@@ -773,13 +773,8 @@ class WGT:
             self.logger.info("%s:\n\t%s", attr, value)
 
 
-def read_all() -> None:
-    """Create a WGT instance and readout all properties."""
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
 
     with WGT("10.1.1.29", version="1.06") as wgt:
         wgt.read_all()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    read_all()
