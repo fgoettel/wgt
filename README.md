@@ -1,25 +1,105 @@
-=============
-WGT Connector
-=============
+# WGT
+
+Connect a Schwörer Ventilation with Wärmegewinntechnik (WGT) to the smart part of your home.
 
 
+## Features
+Read and set properties of the system.
+
+### Read properties
+
+````
+aussenklappe
+betriebsart
+betriebsstunden_erdwaermetauscher
+betriebsstunden_luefter_gesamt
+betriebsstunden_luefter_stufe1
+betriebsstunden_luefter_stufe2
+betriebsstunden_luefter_stufe3
+betriebsstunden_luefter_stufe4
+betriebsstunden_vorheizregister
+betriebsstunden_waermepumpe_gesamt
+betriebsstunden_waermepumpe_heizen
+betriebsstunden_waermepumpe_kuehlen
+betriebsstunden_zusatzheizung
+bypass
+drehzahl_aktuell_abluft
+drehzahl_aktuell_zuluft
+druckwaechter
+erdwaermetauscher
+evu_sperre
+evu_sperre_extern
+fehler
+geblaese_abluft
+geblaese_zuluft
+geraetefilter_restlaufzeit
+geraetefilter_verschmutzt
+geraetefilter_vorgelagert_restlaufzeit
+geraetefilter_vorgelagert_verschmutzt
+heizen_kuehlen
+heizmodul_testbetrieb
+luftleistung_aktuell_abluft
+luftleistung_aktuell_zuluft
+luftleistung_linear_manuell
+luftstufe_aktuell
+luftstufe_manuell
+luftstufe_sensoren
+luftstufe_ueberschreibung
+luftstufe_zeitprogramm
+luftstufe_zeitprogramm_basis
+meldung_any
+nachheizregister
+niedertarif_abgeschaltet
+notbetrieb
+pressostat
+stosslueftung
+stosslueftung_restlaufzeit
+t10_aussen
+t1_nach_erdwaermetauscher
+t2_nach_vorheizregister
+t3_vor_nacherwaermung
+t4_nach_nacherwaermung
+t5_abluft
+t6_waermetauscher
+t7_verdampfer
+t8_kondensator
+temperatur_raum1_basis
+temperatur_raum1_ist
+temperatur_raum1_soll
+tuer_offen
+versorgungsspannung_abgeschaltet
+vorheizregister
+waermepumpe
+waermepumpe_heizen
+waermepumpe_kuehlen
+zeitprogramm_heizen_raum1
+zuluft_zu_kalt
+zusatzheizung_haus
+zusatzheizung_raum1_aktiv
+zusatzheizung_raum1_freigabe
+````
+
+### Set properties
+````
+betriebsart
+heizen_kuehlen
+luftleistung_linear_manuell
+luftstufe_manuell
+stosslueftung
+temperatur_raum1_basis
+temperatur_raum1_soll
+waermepumpe_heizen
+waermepumpe_kuehlen
+zeitprogramm_heizen_raum1
+zusatzheizung_haus
+zusatzheizung_raum1_aktiv
+zusatzheizung_raum1_freigabe
+````
 
 
+## TODO
+Generate property doc automated.
 
-
-Connect a Schwörer Lüftungsanlage with Wärmegewinntechnik (WGT) to your home
-
-
-
-Features
---------
-
-* TODO
-
-Credits
--------
+## Credits
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
