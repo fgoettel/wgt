@@ -8,7 +8,7 @@ from decimal import Decimal
 import pytest
 
 from wgt import WGT
-from wgt.types import Betriebsart
+from wgt.types import Betriebsart, Prozent
 
 WGT_IP = "127.0.0.1"
 WGT_VERSION = "1.10"
@@ -179,6 +179,39 @@ def test_read_errors(pymodbus_mocked, mocker):
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         with pytest.raises(AttributeError):
             wgt.betriebsart
+
+
+def test_older_version(pymodbus_mocked):
+    """Trigger errors on unavailable attributes in older versions."""
+
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        assert wgt.luftleistung_aktuell_abluft is not None
+        assert wgt.luftleistung_aktuell_zuluft is not None
+        assert wgt.drehzahl_aktuell_abluft is not None
+        assert wgt.drehzahl_aktuell_zuluft is not None
+
+    with WGT(ip=WGT_IP, version="1.06") as wgt:
+        assert wgt.luftleistung_aktuell_abluft is None
+        assert wgt.luftleistung_aktuell_zuluft is None
+        assert wgt.drehzahl_aktuell_abluft is None
+        assert wgt.drehzahl_aktuell_zuluft is None
+
+
+def test_luftstufe_prozent_range(pymodbus_mocked):
+    """Trigger errors on percentage not in range."""
+
+    # Values in range
+    values = (30, 42, 100)
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        for value in values:
+            wgt.luftleistung_linear_manuell = Prozent(value)
+
+    # Values not in range
+    values = (-10, 0, 29.9, 100.1, 1e6)
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        for value in values:
+            with pytest.raises(ValueError):
+                wgt.luftleistung_linear_manuell = Prozent(value)
 
 
 if __name__ == "__main__":
