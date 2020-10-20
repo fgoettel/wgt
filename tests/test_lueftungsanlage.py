@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Tests for `wgt` package."""
 
@@ -26,6 +26,11 @@ def test_init(wgt_instance):
     assert wgt_instance.version == Decimal("1.06")
     # Default
     assert wgt_instance.port == 502
+
+def test_init_min_version():
+    """Ensure that a too minor version fails."""
+    with pytest.raises(EnvironmentError):
+        wgt = WGT(ip=None, version=1)
 
 
 if __name__ == "__main__":
