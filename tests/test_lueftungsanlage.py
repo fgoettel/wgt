@@ -3,6 +3,7 @@
 """Tests for `wgt` package."""
 
 from decimal import Decimal
+from datetime import timedelta
 
 import pytest
 
@@ -10,6 +11,33 @@ from wgt import WGT
 
 WGT_IP = "127.0.0.1"
 WGT_VERSION = "1.10"
+
+
+@pytest.fixture
+def pymodbus_mocked(mocker):
+    """Patch pymodbus to deliver acceptable results."""
+
+    class Response:
+        """Fake a response."""
+
+        registers = [0]
+
+    class Success:
+        """Mock a successful response."""
+
+        @staticmethod
+        def isError():
+            return False
+
+    # Patch connection function
+    mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
+    mocker.patch(
+        "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
+        return_value=Response,
+    )
+    mocker.patch(
+        "pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Success()
+    )
 
 
 def test_init():
@@ -32,15 +60,11 @@ def test_init_min_version():
 
 
 @pytest.mark.parametrize("sut", WGT.properties_get())
-def test_parameter_addr_get(mocker, sut):
+def test_parameter_addr_get(pymodbus_mocked, mocker, sut):
     """Test all parameters.
 
     Ensure that the correct address is read.
     """
-    # Patch connection function
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.read_holding_registers")
-
     # Calculated properties
     if sut in ("betriebsstunden_waermepumpe_heizen", "meldung_any"):
         return
@@ -49,13 +73,10 @@ def test_parameter_addr_get(mocker, sut):
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         mocker.spy(wgt.client, "read_holding_registers")
 
-        if sut in ("fehler", "waermepumpe"):
-            # Enums without 1 as valid value
-            with pytest.raises(ValueError):
-                value = getattr(wgt, sut)
-            value = 42
-        else:
-            value = getattr(wgt, sut)
+        value = getattr(wgt, sut)
+        if isinstance(value, timedelta):
+            # Timedelta of 0 is falsely
+            value = timedelta(hours=42)
         assert value
 
     # Verify address
@@ -65,21 +86,11 @@ def test_parameter_addr_get(mocker, sut):
 
 
 @pytest.mark.parametrize("sut", WGT.properties_set())
-def test_parameter_addr_set(mocker, sut):
+def test_parameter_addr_set(pymodbus_mocked, mocker, sut):
     """Test all settable parameters.
 
     Ensure that the correct address is set.
     """
-    # Patch connection function
-    class Success():
-        """Mock a successful response."""
-        @staticmethod
-        def isError():
-            return False
-
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Success())
-
     # Set attr, create type dynamically
     value_plain = 1
     if "luftleistung" in sut:
@@ -87,7 +98,6 @@ def test_parameter_addr_set(mocker, sut):
 
     # First try - plain types aren't supported.
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
-        mocker.spy(wgt.client, "write_registers")
         with pytest.raises(TypeError):
             setattr(wgt, sut, value_plain)
 
@@ -111,15 +121,8 @@ def test_parameter_addr_set(mocker, sut):
     wgt.client.write_registers.assert_called_once_with(*expected_call_param)
 
 
-def test_read_all(mocker):
+def test_read_all(pymodbus_mocked, mocker):
     """Test that the read-all functions reads all properties."""
-    class Response():
-        """Fake a response."""
-        registers = [0]
-
-    # Patch connection function
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
-    mocker.patch("pymodbus.client.sync.ModbusTcpClient.read_holding_registers", return_value=Response)
 
     # Read attr
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
@@ -127,9 +130,10 @@ def test_read_all(mocker):
         wgt.read_all()
 
     # Verify call count
-    expected_call_count = len(WGT.properties_get()) + 12 # Meldungen are read twice for "any_meldung"
+    expected_call_count = (
+        len(WGT.properties_get()) + 12
+    )  # Meldungen are read twice for "any_meldung"
     assert wgt.client.read_holding_registers.call_count == expected_call_count
-
 
 
 if __name__ == "__main__":
