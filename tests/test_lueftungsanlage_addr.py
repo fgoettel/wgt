@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 """Tests for `wgt` addresses package."""
-
 
 import pytest
 
@@ -9,11 +6,12 @@ from wgt import WGT
 
 
 def test_addr():
-    """Ensure that the addresses re in sync with documentation.
+    """Ensure that the addresses are in sync with documentation.
 
     Doc updated 31.03.2020
 
     """
+    # pylint: disable=protected-access,too-many-statements
     assert WGT._addr_betriebsart == 100
     assert WGT._addr_luftstufe_manuell == 101
     assert WGT._addr_luftstufe_aktuell == 102

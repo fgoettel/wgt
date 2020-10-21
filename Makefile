@@ -52,15 +52,15 @@ lint: ## ensure clean code
 	python -m black .
 	python -m flake8 .
 	python -m pydocstyle
-	python -m pylint wgt examples
-	python -m mypy wgt
+	python -m pylint wgt examples tests
+	python -m mypy wgt examples
 
 test: ## run tests quickly with the default Python
 	python -m pytest
 
 coverage: ## check code coverage quickly with the default Python
 	python -m coverage run --source wgt -m pytest
-	python -m coverage report -m
+	python -m coverage report -m --fail-under=100
 	python -m coverage html
 	$(BROWSER) htmlcov/index.html
 

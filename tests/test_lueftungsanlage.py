@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
-"""Tests for `wgt` package."""
+"""Unit tests and mocks for wgt.lueftungsanlage."""
+# pylint: disable=too-few-public-methods,redefined-outer-name,unused-argument
 
 from datetime import timedelta
 from decimal import Decimal
@@ -8,7 +7,7 @@ from decimal import Decimal
 import pytest
 
 from wgt import WGT
-from wgt.types import Betriebsart, Prozent
+from wgt.types import Betriebsart, Meldung, Prozent
 
 WGT_IP = "127.0.0.1"
 WGT_VERSION = "1.10"
@@ -18,7 +17,7 @@ WGT_VERSION = "1.10"
 def pymodbus_mocked(mocker):
     """Patch pymodbus to deliver acceptable results."""
 
-    class Response:
+    class ResponseContent:
         """Fake a response."""
 
         registers = [0]
@@ -28,13 +27,14 @@ def pymodbus_mocked(mocker):
 
         @staticmethod
         def isError():
+            # pylint: disable=invalid-name,missing-function-docstring
             return False
 
     # Patch connection function
     mocker.patch("pymodbus.client.sync.ModbusTcpClient.connect")
     mocker.patch(
         "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
-        return_value=Response,
+        return_value=ResponseContent,
     )
     mocker.patch(
         "pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Success()
@@ -145,6 +145,7 @@ def test_write_error(pymodbus_mocked, mocker):
 
         @staticmethod
         def isError():
+            # pylint: disable=invalid-name,missing-function-docstring
             return True
 
     mocker.patch(
@@ -159,18 +160,18 @@ def test_write_error(pymodbus_mocked, mocker):
 def test_read_errors(pymodbus_mocked, mocker):
     """Excercise errors on reading."""
 
-    class Response:
+    class ResponseContent:
         """Fake a response."""
 
         registers = ["foo"]
 
     mocker.patch(
         "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
-        return_value=Response,
+        return_value=ResponseContent,
     )
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         with pytest.raises(ValueError):
-            wgt.betriebsart
+            assert wgt.betriebsart
 
     mocker.patch(
         "pymodbus.client.sync.ModbusTcpClient.read_holding_registers",
@@ -178,7 +179,7 @@ def test_read_errors(pymodbus_mocked, mocker):
     )
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
         with pytest.raises(AttributeError):
-            wgt.betriebsart
+            assert wgt.betriebsart
 
 
 def test_older_version(pymodbus_mocked):
@@ -212,6 +213,13 @@ def test_luftstufe_prozent_range(pymodbus_mocked):
         for value in values:
             with pytest.raises(ValueError):
                 wgt.luftleistung_linear_manuell = Prozent(value)
+
+
+def test_meldung_any(pymodbus_mocked, mocker):
+    """Trigger one failing Meldung."""
+    mocker.patch("pymodbus.client.sync.ModbusTcpClient.read_holding_registers")
+    with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
+        assert wgt.meldung_any == Meldung.Meldung
 
 
 if __name__ == "__main__":
