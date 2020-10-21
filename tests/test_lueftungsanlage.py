@@ -15,14 +15,14 @@ WGT_VERSION = "1.10"
 
 @pytest.fixture
 def pymodbus_mocked(mocker):
-    """Patch pymodbus to deliver acceptable results."""
+    """Patch pymodbus to deliver results."""
 
     class ResponseContent:
         """Fake a response."""
 
         registers = [0]
 
-    class Success:
+    class WriteStatus:
         """Mock a successful response."""
 
         @staticmethod
@@ -37,7 +37,7 @@ def pymodbus_mocked(mocker):
         return_value=ResponseContent,
     )
     mocker.patch(
-        "pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=Success()
+        "pymodbus.client.sync.ModbusTcpClient.write_registers", return_value=WriteStatus
     )
 
 
@@ -141,7 +141,7 @@ def test_write_error(pymodbus_mocked, mocker):
     """Ensure that we detect an error on writing."""
 
     class Failure:
-        """Mock a successful response."""
+        """Mock a failing response."""
 
         @staticmethod
         def isError():
@@ -198,21 +198,21 @@ def test_older_version(pymodbus_mocked):
         assert wgt.drehzahl_aktuell_zuluft is None
 
 
-def test_luftstufe_prozent_range(pymodbus_mocked):
-    """Trigger errors on percentage not in range."""
+@pytest.mark.parametrize("value", (30, 42, 100))
+def test_luftstufe_prozent_range_ok(pymodbus_mocked, value):
+    """Set valid lufstufe percentage."""
 
-    # Values in range
-    values = (30, 42, 100)
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
-        for value in values:
-            wgt.luftleistung_linear_manuell = Prozent(value)
+        wgt.luftleistung_linear_manuell = Prozent(value)
 
+
+@pytest.mark.parametrize("value", (-10, 0, 29.9, 100.1, 1e6))
+def test_luftstufe_prozent_range_nok(pymodbus_mocked, value):
+    """Set invalid lufstufe percentage."""
     # Values not in range
-    values = (-10, 0, 29.9, 100.1, 1e6)
     with WGT(ip=WGT_IP, version=WGT_VERSION) as wgt:
-        for value in values:
-            with pytest.raises(ValueError):
-                wgt.luftleistung_linear_manuell = Prozent(value)
+        with pytest.raises(ValueError):
+            wgt.luftleistung_linear_manuell = Prozent(value)
 
 
 def test_meldung_any(pymodbus_mocked, mocker):
