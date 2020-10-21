@@ -2,6 +2,6 @@
 
 __author__ = """Fabian Göttel"""
 __email__ = "fabian.goettel@gmail.com"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 from .lueftungsanlage import WGT  # noqa: F401
